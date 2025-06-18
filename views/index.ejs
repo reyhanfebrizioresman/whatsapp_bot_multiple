@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Multi-Session Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .logout-btn svg {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .whatsapp-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: #25D366;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+            box-shadow: 0 10px 30px rgba(37, 211, 102, 0.3);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 10px 30px rgba(37, 211, 102, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 15px 40px rgba(37, 211, 102, 0.5); }
+            100% { transform: scale(1); box-shadow: 0 10px 30px rgba(37, 211, 102, 0.3); }
+        }
+
+        .whatsapp-logo svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-icon.total { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .stat-icon.connected { background: linear-gradient(135deg, #25D366, #128C7E); }
+        .stat-icon.disconnected { background: linear-gradient(135deg, #dc3545, #c82333); }
+        .stat-icon.pending { background: linear-gradient(135deg, #ffc107, #e0a800); }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .create-session {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .create-session h2 {
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            gap: 15px;
+            align-items: stretch;
+            flex-wrap: wrap;
+        }
+
+        .form-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #25D366;
+            box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107, #e0a800);
+            color: #212529;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .sessions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .session-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .session-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .session-card.connected::before { background: linear-gradient(90deg, #25D366, #128C7E); }
+        .session-card.disconnected::before { background: linear-gradient(90deg, #dc3545, #c82333); }
+        .session-card.connecting::before { background: linear-gradient(90deg, #ffc107, #e0a800); }
+        .session-card.qr_ready::before { background: linear-gradient(90deg, #17a2b8, #138496); }
+        .session-card.error::before { background: linear-gradient(90deg, #fd7e14, #e0621a); }
+
+        .session-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .session-info h3 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.2rem;
+        }
+
+        .session-token {
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #666;
+            background: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            word-break: break-all;
+        }
+
+        .status-badge {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-badge.connected {
+            background: rgba(37, 211, 102, 0.1);
+            color: #128C7E;
+        }
+
+        .status-badge.disconnected {
+            background: rgba(220, 53, 69, 0.1);
+            color: #c82333;
+        }
+
+        .status-badge.connecting {
+            background: rgba(255, 193, 7, 0.1);
+            color: #e0a800;
+        }
+
+        .status-badge.qr_ready {
+            background: rgba(23, 162, 184, 0.1);
+            color: #138496;
+        }
+
+        .status-badge.error {
+            background: rgba(253, 126, 20, 0.1);
+            color: #e0621a;
+        }
+
+        .session-details {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: #333;
+            font-weight: bold;
+        }
+
+        .session-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(37, 211, 102, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.1) rotate(180deg);
+            box-shadow: 0 15px 40px rgba(37, 211, 102, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 10px;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .form-group {
+                flex-direction: column;
+            }
+            
+            .form-input {
+                min-width: 100%;
+            }
+            
+            .sessions-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .session-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            z-index: 1001;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+
+        .notification.warning {
+            background: linear-gradient(135deg, #ffc107, #e0a800);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            margin: auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .modal-body {
+            margin-bottom: 30px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .qr-code {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .qr-code img {
+            max-width: 300px;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #25D366, #128C7E);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            animation: progressAnimation 2s ease-in-out infinite;
+        }
+
+        @keyframes progressAnimation {
+            0%, 100% { width: 30%; }
+            50% { width: 70%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <a href="#" class="logout-btn" onclick="handleLogout()">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16.56 5.44l-1.45 1.45L17.88 9H8v2h9.88l-2.77 2.11 1.45 1.45L21.83 10l-5.27-4.56zM4 12V4c0-1.1.9-2 2-2h6v2H6v8H4z"/>
+                </svg>
+                Logout
+            </a>
+            <div class="whatsapp-logo">
+                <svg viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.89 3.215"/>
+                </svg>
+            </div>
+            <h1>WhatsApp Multi-Session Dashboard</h1>
+            <p>Kelola multiple session WhatsApp dengan mudah</p>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-icon total">📊</div>
+                <div class="stat-number" id="total-sessions">3</div>
+                <div class="stat-label">Total Sessions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon connected">✅</div>
+                <div class="stat-number" id="connected-sessions">2</div>
+                <div class="stat-label">Connected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon disconnected">❌</div>
+                <div class="stat-number" id="disconnected-sessions">1</div>
+                <div class="stat-label">Disconnected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon pending">⏳</div>
+                <div class="stat-number" id="pending-sessions">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+        </div>
+
+        <!-- Create Session Form -->
+        <div class="create-session">
+            <h2>
+                <span>➕</span>
+                Buat Session Baru
+            </h2>
+            <form id="create-form">
+                <div class="form-group">
+                    <input type="text" 
+                           name="name" 
+                           class="form-input" 
+                           placeholder="Masukkan nama session (contoh: Customer Service, Marketing, etc.)" 
+                           required
+                           maxlength="50">
+                    <button type="submit" class="btn btn-primary">
+                        ➕ Tambah Session
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sessions List -->
+        <div id="sessions-container">
+            <div class="sessions-grid" id="sessions-grid">
+                <!-- Session cards will be dynamically loaded here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Refresh Button -->
+    <button class="refresh-btn" onclick="refreshPage()" title="Refresh Dashboard">
+        🔄
+    </button>
+
+    <!-- QR Code Modal -->
+    <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="qrModalLabel">Scan QR Code - <span id="qrSessionName"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">Close</button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="session-info mb-3">
+                        <div class="session-name" id="qrModalSessionName"></div>
+                        <div class="session-token" id="qrModalSessionToken">Token: </div>
+                    </div>
+
+                    <div class="status-container mb-3">
+                        <div id="qrModalStatus" class="status qr_ready">
+                            <span class="loading-spinner" id="qrModalLoading" style="display: none;"></span>
+                            <span id="qrModalStatusText">QR Code Ready - Scan dengan WhatsApp Anda</span>
+                        </div>
+                        
+                        <div class="timer mt-2">
+                            <span id="qrModalTimer">⏱️ 60</span> detik tersisa
+                        </div>
+                        
+                        <div class="progress-bar mt-2">
+                            <div class="progress-fill" id="qrModalProgress"></div>
+                        </div>
+                    </div>
+
+                    <div class="qr-code" id="qr-code-container">
+                        <!-- QR Code will be inserted here -->
+                    </div>
+                    
+                    <div class="instructions text-start mt-4">
+                        <h3>Cara Scan QR Code:</h3>
+                        <ol>
+                            <li>Buka aplikasi <strong>WhatsApp</strong> di ponsel Anda</li>
+                            <li>Tap menu <strong>⋮</strong> (titik tiga) di pojok kanan atas</li>
+                            <li>Pilih <strong>"Linked Devices"</strong> atau <strong>"WhatsApp Web"</strong></li>
+                            <li>Tap <strong>"Link a Device"</strong></li>
+                            <li>Arahkan kamera ke QR code di atas</li>
+                            <li>Tunggu hingga tersambung</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary" onclick="refreshQR()">🔄 Refresh QR</button>
+                        <button type="button" class="btn btn-warning" onclick="restartSession(currentQRToken)">🔃 Restart Session</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentQRToken = null;
+        let qrModalTimerInterval;
+        let qrModalStatusCheckInterval;
+        let qrModalTimeLeft = 60;
+        let isQRModalConnected = false; // To prevent multiple redirects
+        let activeQrModal = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAndRenderSessions();
+            setupFormValidation();
+            setInterval(fetchAndRenderSessions, 10000); // Refresh sessions every 10 seconds
+
+            const qrModalElement = document.getElementById('qrModal');
+            qrModalElement.addEventListener('hidden.bs.modal', () => {
+                closeQRModal(); // Ensure cleanup when modal is closed manually
+            });
+        });
+
+        async function fetchAndRenderSessions() {
+            try {
+                const response = await fetch('/sessions');
+                const sessions = await response.json();
+                console.log('Fetched sessions:', sessions);
+                renderSessions(sessions);
+                updateStatistics(sessions);
+            } catch (error) {
+                console.error('Error fetching sessions:', error);
+                showNotification('Failed to load sessions. Please refresh the page.', 'error');
+            }
+        }
+
+        function renderSessions(sessions) {
+            const sessionsGrid = document.getElementById('sessions-grid');
+            sessionsGrid.innerHTML = ''; // Clear existing cards
+
+            if (sessions.length === 0) {
+                sessionsGrid.innerHTML = '<p class="text-white-50 text-center col-12">No sessions found. Create a new one to get started!</p>';
+                return;
+            }
+
+            sessions.forEach(session => {
+                const card = createSessionCard(session);
+                sessionsGrid.appendChild(card);
+            });
+        }
+
+        function createSessionCard(session) {
+            const card = document.createElement('div');
+            let statusClass = session.status || 'unknown'; // Default to 'unknown' if status is null/undefined
+            // Map backend statuses to frontend display classes
+            if (session.isReady) {
+                statusClass = 'connected';
+            } else if (session.status === 'qr_ready') {
+                statusClass = 'qr_ready';
+            } else if (session.status === 'connecting' || session.status === 'pending') {
+                statusClass = 'connecting';
+            } else if (session.status === 'disconnected') {
+                statusClass = 'disconnected';
+            } else if (session.status === 'error') {
+                statusClass = 'error';
+            } else {
+                statusClass = 'disconnected'; // Default to disconnected for other unknown states
+            }
+
+            card.className = `session-card ${statusClass}`;
+            card.dataset.token = session.token;
+
+            const userName = session.userName ? `WhatsApp User: ${session.userName}` : '';
+            const jid = session.jid ? `JID: ${session.jid}` : '';
+            const lastUpdate = session.last_update ? new Date(session.last_update).toLocaleString() : 'N/A';
+
+            card.innerHTML = `
+                <div class="session-header">
+                    <div class="session-info">
+                        <h3>${session.name}</h3>
+                        <div class="session-token">Token: ${session.token}</div>
+                    </div>
+                    <div class="status-badge ${statusClass}">
+                        ${statusClass.toUpperCase().replace('_', ' ')}
+                        ${statusClass === 'connecting' ? '<span class="loading-spinner"></span>' : ''}
+                    </div>
+                </div>
+
+                <div class="session-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value status-text">${session.status || 'N/A'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Last Update:</span>
+                        <span class="detail-value">${lastUpdate}</span>
+                    </div>
+                    ${userName ? `<div class="detail-row"><span class="detail-label">WhatsApp User:</span><span class="detail-value">${userName}</span></div>` : ''}
+                    ${jid ? `<div class="detail-row"><span class="detail-label">JID:</span><span class="detail-value">${jid}</span></div>` : ''}
+                </div>
+
+                <div class="session-actions">
+                    ${session.isReady ? `
+                        <span class="btn btn-secondary btn-sm" style="opacity: 0.6;">
+                            ✅ Already Connected
+                        </span>
+                    ` : `
+                        <button class="btn btn-primary btn-sm" 
+                                onclick="startSession('${session.token}', '${session.name}')">
+                            🚀 Start & Scan QR
+                        </button>
+                    `}
+                    
+                    <button class="btn btn-info btn-sm" 
+                            onclick="checkStatus('${session.token}', true)">
+                        🔄 Check Status
+                    </button>
+                    
+                    <button class="btn btn-warning btn-sm"
+                            onclick="restartSession('${session.token}')">
+                        🔃 Restart
+                    </button>
+                    
+                    <button class="btn btn-danger btn-sm"
+                            onclick="deleteSession('${session.token}', '${session.name}')">
+                        🗑️ Delete
+                    </button>
+                </div>
+            `;
+            return card;
+        }
+
+        function updateStatistics(sessions) {
+            const total = sessions.length;
+            const connected = sessions.filter(s => s.isReady).length;
+            const disconnected = sessions.filter(s => s.status === 'disconnected').length;
+            const pending = sessions.filter(s => s.status === 'pending' || s.status === 'connecting' || s.status === 'qr_ready').length;
+
+            document.getElementById('total-sessions').textContent = total;
+            document.getElementById('connected-sessions').textContent = connected;
+            document.getElementById('disconnected-sessions').textContent = disconnected;
+            document.getElementById('pending-sessions').textContent = pending;
+        }
+
+        async function checkStatus(token, showNotification = false) {
+            const card = document.querySelector(`.session-card[data-token="${token}"]`);
+            if (card) {
+                card.querySelector('.status-text').textContent = 'Checking...';
+                card.querySelector('.status-badge').innerHTML = 'CHECKING...';
+            }
+
+            try {
+                const response = await fetch(`/session/status/${token}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    const sessionInfo = data;
+                    let statusClass = 'disconnected'; // Default
+
+                    if (sessionInfo.isReady) {
+                        statusClass = 'connected';
+                    } else if (sessionInfo.session_status === 'qr_ready') { // Use session_status from backend
+                        statusClass = 'qr_ready';
+                    } else if (sessionInfo.session_status === 'connecting' || sessionInfo.session_status === 'pending') {
+                        statusClass = 'connecting';
+                    } else if (sessionInfo.session_status === 'disconnected') {
+                        statusClass = 'disconnected';
+                    } else if (sessionInfo.session_status === 'error') {
+                        statusClass = 'error';
+                    }
+
+                    if (card) {
+                        card.classList.remove('connected', 'disconnected', 'connecting', 'qr-ready', 'error', 'pending');
+                        card.classList.add(statusClass);
+                        card.querySelector('.status-badge').innerHTML = statusClass.toUpperCase().replace('_', ' ');
+                        if (statusClass === 'connecting') {
+                            card.querySelector('.status-badge').innerHTML += '<span class="loading-spinner"></span>';
+                        }
+                        card.querySelector('.status-text').textContent = sessionInfo.session_status; // Display raw status from backend
+                        
+                        // Update details
+                        card.querySelector('.session-details').innerHTML = `
+                            <div class="detail-row">
+                                <span class="detail-label">Status:</span>
+                                <span class="detail-value status-text">${sessionInfo.session_status || 'N/A'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Last Update:</span>
+                                <span class="detail-value">${new Date(sessionInfo.lastUpdate).toLocaleString()}</span>
+                            </div>
+                            ${sessionInfo.userName ? `<div class="detail-row"><span class="detail-label">WhatsApp User:</span><span class="detail-value">${sessionInfo.userName}</span></div>` : ''}
+                            ${sessionInfo.jid ? `<div class="detail-row"><span class="detail-label">JID:</span><span class="detail-value">${sessionInfo.jid}</span></div>` : ''}
+                        `;
+
+                        // Update action buttons based on status
+                        const actionsDiv = card.querySelector('.session-actions');
+                        actionsDiv.innerHTML = `
+                            ${sessionInfo.isReady ? `
+                                <span class="btn btn-secondary btn-sm" style="opacity: 0.6;">
+                                    ✅ Already Connected
+                                </span>
+                            ` : `
+                                <button class="btn btn-primary btn-sm" 
+                                        onclick="startSession('${token}', '${sessionInfo.name}')">
+                                    🚀 Start & Scan QR
+                                </button>
+                            `}
+                            <button class="btn btn-info btn-sm" 
+                                    onclick="checkStatus('${token}', true)">
+                                🔄 Check Status
+                            </button>
+                            <button class="btn btn-warning btn-sm"
+                                    onclick="restartSession('${token}')">
+                                🔃 Restart
+                            </button>
+                            <button class="btn btn-danger btn-sm"
+                                    onclick="deleteSession('${token}', '${sessionInfo.name}')">
+                                🗑️ Delete
+                            </button>
+                        `;
+                    }
+                    if (showNotification) {
+                        showNotification(`Status for ${sessionInfo.name} (${token}): ${sessionInfo.session_status}.`, 'info');
+                    }
+                } else {
+                    if (card) {
+                        card.querySelector('.status-text').textContent = 'error';
+                        card.classList.add('error');
+                        card.querySelector('.status-badge').innerHTML = 'ERROR';
+                    }
+                    if (showNotification) {
+                        showNotification(`Failed to check status for ${token}: ${data.message}`, 'error');
+                    }
+                }
+            } catch (error) {
+                console.error(`Error checking status for ${token}:`, error);
+                if (card) {
+                    card.querySelector('.status-text').textContent = 'error';
+                    card.classList.add('error');
+                    card.querySelector('.status-badge').innerHTML = 'ERROR';
+                }
+                if (showNotification) {
+                    showNotification(`Network error or server unreachable for ${token}.`, 'error');
+                }
+            } finally {
+                // No need to call updateStatistics here, fetchAndRenderSessions will handle it in interval
+            }
+        }
+
+        async function startSession(token, sessionName) {
+            currentQRToken = token;
+            qrModalTimeLeft = 60; // Reset timer
+            isQRModalConnected = false;
+
+            // Display session info in modal
+            document.getElementById('qrModalSessionName').textContent = sessionName;
+            document.getElementById('qrModalSessionToken').textContent = `Token: ${token}`;
+            document.getElementById('qr-code-container').innerHTML = ''; // Clear previous QR
+            document.getElementById('qrModalStatusText').textContent = 'Loading QR...';
+            document.getElementById('qrModalStatus').className = 'status connecting';
+            document.getElementById('qrModalLoading').style.display = 'inline-block';
+
+            // Show the modal
+            activeQrModal = new bootstrap.Modal(document.getElementById('qrModal'));
+            activeQrModal.show();
+
+            // Start QR generation process
+            try {
+                const response = await fetch(`/session/start/${token}`, { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.status === 'qr_generated' && data.qr) {
+                        document.getElementById('qr-code-container').innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(data.qr)}&size=300x300&margin=20&format=png" alt="QR Code" class="qr-image">`;
+                        updateQRModalStatus('qr_ready', 'Scan QR Code ini!');
+                        showNotification(`QR code generated for ${token}.`, 'success');
+                        startQRModalTimer();
+                        startQRModalStatusCheck();
+                    } else if (data.status === 'connected') {
+                        handleQRModalConnection(`Session ${token} is already connected.`);
+                    } else {
+                        updateQRModalStatus(data.status, `Waiting for connection for ${token}...`);
+                        showNotification(`Starting session ${token}. Status: ${data.status}.`, 'warning');
+                        startQRModalStatusCheck();
+                    }
+                } else {
+                    updateQRModalStatus('error', `Failed to start session: ${data.message}`);
+                    showNotification(`Failed to start session ${token}: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error(`Error starting session ${token}:`, error);
+                updateQRModalStatus('error', `Network Error: ${error.message}`);
+                showNotification(`Network error or server unreachable for starting session ${token}.`, 'error');
+            } finally {
+                fetchAndRenderSessions(); // Refresh main dashboard sessions
+            }
+        }
+
+        function updateQRModalStatus(status, message) {
+            const statusEl = document.getElementById('qrModalStatus');
+            const statusTextEl = document.getElementById('qrModalStatusText');
+            const loadingEl = document.getElementById('qrModalLoading');
+
+            statusEl.className = 'status'; // Reset classes
+            statusTextEl.textContent = message;
+
+            if (status === 'connecting' || status === 'pending') {
+                statusEl.classList.add('connecting');
+                loadingEl.style.display = 'inline-block';
+            } else if (status === 'qr_ready') {
+                statusEl.classList.add('qr_ready');
+                loadingEl.style.display = 'none';
+            } else if (status === 'connected') {
+                statusEl.classList.add('connected');
+                loadingEl.style.display = 'none';
+            } else if (status === 'error') {
+                statusEl.classList.add('error');
+                loadingEl.style.display = 'none';
+            } else {
+                statusEl.classList.add('connecting'); // Default
+                loadingEl.style.display = 'inline-block';
+            }
+        }
+
+        function startQRModalTimer() {
+            clearInterval(qrModalTimerInterval);
+            qrModalTimerInterval = setInterval(() => {
+                qrModalTimeLeft--;
+                updateQRModalTimerDisplay();
+                if (qrModalTimeLeft <= 0) {
+                    clearInterval(qrModalTimerInterval);
+                    handleQRModalTimeout();
+                }
+            }, 1000);
+        }
+
+        function updateQRModalTimerDisplay() {
+            const timerEl = document.getElementById('qrModalTimer');
+            const progressEl = document.getElementById('qrModalProgress');
+
+            const minutes = Math.floor(qrModalTimeLeft / 60);
+            const seconds = qrModalTimeLeft % 60;
+            timerEl.textContent = `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            const progressPercent = ((60 - qrModalTimeLeft) / 60) * 100;
+            progressEl.style.width = progressPercent + '%';
+            
+            if (qrModalTimeLeft <= 10) {
+                progressEl.style.background = 'linear-gradient(90deg, #dc3545, #c82333)';
+                timerEl.style.color = '#dc3545';
+            } else if (qrModalTimeLeft <= 30) {
+                progressEl.style.background = 'linear-gradient(90deg, #ffc107, #e0a800)';
+                timerEl.style.color = '#ffc107';
+            } else {
+                progressEl.style.background = 'linear-gradient(90deg, #25D366, #128C7E)';
+                timerEl.style.color = '#25D366';
+            }
+        }
+
+        function startQRModalStatusCheck() {
+            clearInterval(qrModalStatusCheckInterval);
+            qrModalStatusCheckInterval = setInterval(async () => {
+                if (!currentQRToken || isQRModalConnected) {
+                    clearInterval(qrModalStatusCheckInterval);
+                    return;
+                }
+                try {
+                    const response = await fetch(`/session/status/${currentQRToken}`);
+                    const data = await response.json();
+                    if (response.ok && data.isReady) {
+                        handleQRModalConnection(`Session ${currentQRToken} connected!`);
+                    } else if (response.ok && data.session_status) {
+                        updateQRModalStatus(data.session_status, `Status: ${data.session_status}`);
+                    }
+                } catch (error) {
+                    console.error('QR Modal status check failed:', error);
+                    updateQRModalStatus('error', 'Connection Lost. Please Refresh.');
+                    clearInterval(qrModalStatusCheckInterval);
+                }
+            }, 3000); // Check every 3 seconds
+        }
+
+        function handleQRModalConnection(message) {
+            if (isQRModalConnected) return; // Already connected, prevent re-entry
+            isQRModalConnected = true;
+
+            clearInterval(qrModalTimerInterval);
+            clearInterval(qrModalStatusCheckInterval);
+            updateQRModalStatus('connected', message);
+            document.getElementById('qrModalTimer').textContent = '✅ Connected';
+            document.getElementById('qrModalProgress').style.width = '100%';
+            document.getElementById('qrModalProgress').style.background = 'linear-gradient(90deg, #25D366, #128C7E)';
+            showNotification(message, 'success');
+            
+            setTimeout(() => {
+                closeQRModal();
+                fetchAndRenderSessions(); // Refresh the main dashboard
+            }, 3000); // Close modal and refresh dashboard after 3 seconds
+        }
+
+        function handleQRModalTimeout() {
+            updateQRModalStatus('error', 'QR Code expired. Refreshing...');
+            showNotification('QR Code expired. Generating new QR code...', 'warning');
+            document.getElementById('qr-code-container').innerHTML = ''; // Clear QR
+            document.getElementById('qrModalLoading').style.display = 'inline-block';
+
+            setTimeout(() => {
+                startSession(currentQRToken, document.getElementById('qrModalSessionName').textContent); // Restart session
+            }, 2000);
+        }
+
+        async function refreshQR() {
+            if (currentQRToken) {
+                updateQRModalStatus('connecting', 'Generating new QR...');
+                document.getElementById('qr-code-container').innerHTML = ''; // Clear previous QR
+                document.getElementById('qrModalLoading').style.display = 'inline-block';
+                qrModalTimeLeft = 60; // Reset timer
+                updateQRModalTimerDisplay();
+                startQRModalTimer();
+                startQRModalStatusCheck();
+
+                try {
+                    const response = await fetch(`/session/start/${currentQRToken}`, { method: 'POST' });
+                    const data = await response.json();
+
+                    if (response.ok && data.status === 'qr_generated' && data.qr) {
+                        document.getElementById('qr-code-container').innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(data.qr)}&size=300x300&margin=20&format=png" alt="QR Code" class="qr-image">`;
+                        updateQRModalStatus('qr_ready', 'Scan QR Code ini!');
+                        showNotification(`New QR code generated for ${currentQRToken}.`, 'success');
+                    } else if (response.ok && data.status === 'connected') {
+                        handleQRModalConnection(`Session ${currentQRToken} is already connected.`);
+                    } else {
+                        updateQRModalStatus(data.status, `Error generating QR: ${data.message}`);
+                        showNotification(`Failed to generate new QR for ${currentQRToken}: ${data.message}`, 'error');
+                    }
+                } catch (error) {
+                    console.error(`Error refreshing QR for ${currentQRToken}:`, error);
+                    updateQRModalStatus('error', `Network Error during QR refresh: ${error.message}`);
+                    showNotification(`Network error refreshing QR for ${currentQRToken}.`, 'error');
+                } finally {
+                    fetchAndRenderSessions();
+                }
+            } else {
+                showNotification('No active QR session to refresh.', 'warning');
+                closeQRModal();
+            }
+        }
+
+        async function restartSession(token) {
+            if (!confirm(`Are you sure you want to restart session "${token}"? This will clear its credentials and require a new QR scan.`)) {
+                return;
+            }
+            showNotification('Restarting session...', 'warning');
+            closeQRModal(); // Close current QR modal if open
+            try {
+                const response = await fetch(`/session/restart/${token}`, { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showNotification(`Session ${token} restarted. Please scan new QR.`, 'success');
+                    await fetchAndRenderSessions(); // Refresh dashboard to update card status
+                    startSession(token, document.getElementById('qrModalSessionName').textContent || 'Unnamed Session'); // Re-open QR modal for new scan
+                } else {
+                    showNotification(`Failed to restart session ${token}: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error(`Error restarting session ${token}:`, error);
+                showNotification(`Network error or server unreachable for restarting session ${token}.`, 'error');
+            } finally {
+                fetchAndRenderSessions();
+            }
+        }
+
+        async function deleteSession(token, name) {
+            if (!confirm(`Are you sure you want to DELETE session "${name}" (${token})? This action cannot be undone.`)) {
+                return;
+            }
+            showNotification('Deleting session...', 'warning');
+            try {
+                const response = await fetch(`/session/${token}`, { method: 'DELETE' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showNotification(`Session "${name}" (${token}) deleted.`, 'success');
+                    await fetchAndRenderSessions(); // Refresh dashboard
+                } else {
+                    showNotification(`Failed to delete session ${token}: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error(`Error deleting session ${token}:`, error);
+                showNotification(`Network error or server unreachable for deleting session ${token}.`, 'error');
+            } finally {
+                fetchAndRenderSessions();
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            if (!container) {
+                console.warn('Notification container not found.');
+                return;
+            }
+            const notification = document.createElement('div');
+            notification.classList.add('notification', type);
+            notification.textContent = message;
+            container.appendChild(notification);
+
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10); // Small delay to trigger CSS transition
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+                notification.addEventListener('transitionend', () => notification.remove(), { once: true });
+            }, 5000);
+        }
+
+        function showQRModal(statusText) {
+            document.getElementById('qrModalStatusText').textContent = statusText;
+            activeQrModal = new bootstrap.Modal(document.getElementById('qrModal'));
+            activeQrModal.show();
+        }
+
+        function closeQRModal() {
+            if (activeQrModal) {
+                activeQrModal.hide();
+            }
+            clearInterval(qrModalTimerInterval);
+            clearInterval(qrModalStatusCheckInterval);
+            currentQRToken = null;
+            qrModalTimeLeft = 60; // Reset for next use
+            isQRModalConnected = false; // Reset connection state
+            document.getElementById('qr-code-container').innerHTML = ''; // Clear QR image
+            document.getElementById('qrModalStatusText').textContent = 'Waiting for QR code...';
+            document.getElementById('qrModalTimer').textContent = '⏱️ 60 detik tersisa';
+            document.getElementById('qrModalProgress').style.width = '0%';
+            document.getElementById('qrModalProgress').style.background = 'linear-gradient(90deg, #25D366, #128C7E)';
+            document.getElementById('qrModalLoading').style.display = 'none';
+            fetchAndRenderSessions(); // Always refresh dashboard after modal closes
+        }
+
+        function refreshPage() {
+            location.reload();
+        }
+
+        // Form Submission for creating new session
+        document.getElementById('create-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const sessionNameInput = document.querySelector('#create-form input[name="name"]');
+            const sessionName = sessionNameInput.value.trim();
+
+            if (!sessionName) {
+                showNotification('Session name cannot be empty.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/session', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: sessionName })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showNotification(`Session "${sessionName}" created. Token: ${data.token}`, 'success');
+                    sessionNameInput.value = ''; // Clear input
+                    await fetchAndRenderSessions(); // Refresh the list
+                    startSession(data.token, sessionName); // Open QR modal for new session
+                } else {
+                    showNotification(`Failed to create session: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error creating session:', error);
+                showNotification('Network error or server unreachable during session creation.', 'error');
+            } finally {
+                fetchAndRenderSessions();
+            }
+        });
+
+        function setupFormValidation() {
+            const sessionNameInput = document.querySelector('#create-form input[name="name"]');
+            if (sessionNameInput) {
+                sessionNameInput.addEventListener('input', () => {
+                    if (sessionNameInput.value.length > 50) {
+                        sessionNameInput.setCustomValidity('Session name cannot exceed 50 characters.');
+                    } else {
+                        sessionNameInput.setCustomValidity('');
+                    }
+                });
+            }
+        }
+
+        // Handle logout
+        async function handleLogout() {
+            if (!confirm('Are you sure you want to logout?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showNotification('Logging out...', 'success');
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/auth/login';
+                    }, 1000);
+                } else {
+                    showNotification(`Logout failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                showNotification('Network error during logout. Redirecting...', 'warning');
+                setTimeout(() => {
+                    window.location.href = '/auth/login';
+                }, 2000);
+            }
+        }
+    </script>
+</body>
+</html>
