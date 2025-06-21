@@ -2,6 +2,8 @@
 import express from 'express';
 import User from '../models/User.js';
 import { isNotAuthenticated, isAuthenticated } from '../middleware/auth.js';
+import { authenticateJWT } from '../middleware/jwtAuth.js';
+import { generateToken, refreshToken } from '../services/jwtService.js';
 
 const router = express.Router();
 
@@ -77,6 +79,125 @@ router.post('/login', isNotAuthenticated, async (req, res) => {
         console.error('=== LOGIN ERROR ===');
         console.error('Error details:', error);
         res.render('login', { error: 'An error occurred during login' });
+    }
+});
+
+// JWT Login API endpoint
+router.post('/api/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        console.log('=== JWT LOGIN ATTEMPT ===');
+        console.log('Username:', username);
+        
+        // Validasi input
+        if (!username || !password) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'Username and password are required' 
+            });
+        }
+
+        // Cari user
+        const user = await User.findOne({ 
+            where: { username: username.trim() },
+            raw: false
+        });
+        
+        if (!user) {
+            return res.status(401).json({ 
+                success: false,
+                error: 'Invalid username or password' 
+            });
+        }
+
+        // Cek password
+        const isMatch = await user.comparePassword(password);
+        
+        if (!isMatch) {
+            return res.status(401).json({ 
+                success: false,
+                error: 'Invalid username or password' 
+            });
+        }
+
+        // Generate JWT token
+        const token = generateToken(user);
+        
+        console.log('=== JWT LOGIN SUCCESSFUL ===');
+        console.log('User:', user.username, 'Token generated');
+        
+        res.json({
+            success: true,
+            message: 'Login successful',
+            data: {
+                token: token,
+                user: {
+                    id: user.id,
+                    username: user.username
+                },
+                expiresIn: '7d'
+            }
+        });
+
+    } catch (error) {
+        console.error('=== JWT LOGIN ERROR ===');
+        console.error('Error details:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Internal server error' 
+        });
+    }
+});
+
+// JWT Refresh Token endpoint
+router.post('/api/refresh', authenticateJWT, async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        const token = authHeader.split(' ')[1];
+        
+        const newToken = refreshToken(token);
+        
+        if (!newToken) {
+            return res.status(401).json({ 
+                success: false,
+                error: 'Invalid token' 
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Token refreshed successfully',
+            data: {
+                token: newToken,
+                expiresIn: '7d'
+            }
+        });
+        
+    } catch (error) {
+        console.error('Token refresh error:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Internal server error' 
+        });
+    }
+});
+
+// JWT Logout endpoint (optional - client can just discard token)
+router.post('/api/logout', authenticateJWT, async (req, res) => {
+    try {
+        // In a real app, you might want to blacklist the token
+        // For now, just return success - client should discard token
+        res.json({
+            success: true,
+            message: 'Logout successful'
+        });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Internal server error' 
+        });
     }
 });
 

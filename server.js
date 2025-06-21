@@ -26,7 +26,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Session configuration
+// Session configuration (for web interface)
 const MySQLStoreSession = MySQLStore(session);
 const sessionStore = new MySQLStoreSession({
     host: process.env.DB_HOST || 'localhost',
@@ -50,7 +50,7 @@ app.use(session({
 // Routes
 app.use('/auth', authRoutes);
 app.use('/', sessionRoutes);
-app.use('/api/whatsapp', isAuthenticated, whatsappRoutes);
+app.use('/api/whatsapp', whatsappRoutes); // JWT auth handled in route
 
 // Start automatic cleanup service
 startAutomaticCleanup();
