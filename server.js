@@ -9,6 +9,7 @@ import session from 'express-session';
 import MySQLStore from 'express-mysql-session';
 import sequelize from './config/database.js';
 import { isAuthenticated } from './middleware/auth.js';
+import { startAutomaticCleanup } from './services/whatsappService.js';
 
 dotenv.config();
 const app = express();
@@ -51,4 +52,7 @@ app.use('/auth', authRoutes);
 app.use('/', sessionRoutes);
 app.use('/api/whatsapp', isAuthenticated, whatsappRoutes);
 
-app.listen(3000, () => console.log('Server running at http://localhost:3000'));
+// Start automatic cleanup service
+startAutomaticCleanup();
+
+app.listen(3001, () => console.log('Server running at http://localhost:3001'));

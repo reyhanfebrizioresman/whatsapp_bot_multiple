@@ -12,7 +12,9 @@ import {
   closeSocket, 
   getSessionInfo, 
   getActiveSessions,
-  cleanupInactiveSessions 
+  cleanupInactiveSessions,
+  forceCleanupSession,
+  resetSessionReconnectAttempts
 } from '../services/whatsappService.js';
 import fs from 'fs';
 import path from 'path';
@@ -21,10 +23,18 @@ export const showSessionList = async (req, res) => {
   try {
     const sessions = await getAllSessions();
     // Add session info for each session
-    const sessionsWithInfo = sessions.map(session => ({
-      ...session,
-      info: getSessionInfo(session.token)
-    }));
+    const sessionsWithInfo = sessions.map(session => {
+      const sessionInfo = getSessionInfo(session.token);
+      return {
+        ...session,
+        session_status: session.status, // Add session_status field
+        isReady: sessionInfo.isReady, // Add isReady field
+        jid: sessionInfo.jid,
+        userName: sessionInfo.name,
+        connectionStatus: sessionInfo.status,
+        info: sessionInfo // Keep original info for backward compatibility
+      };
+    });
     res.render('index', { sessions: sessionsWithInfo });
   } catch (error) {
     console.error('Error loading sessions:', error);
@@ -73,12 +83,30 @@ export const handleStartSession = async (req, res) => {
       });
     }
 
-    // Close any existing connection for this token
-    console.log(`Closing existing connection for token: ${token}`);
-    closeSocket(token);
+    // Check current session status
+    const currentSessionInfo = getSessionInfo(token);
+    console.log(`Current session info for ${token}:`, currentSessionInfo);
+    
+    // If session is already connected, return success immediately
+    if (currentSessionInfo.isReady) {
+      console.log(`Session ${token} is already connected, returning success`);
+      return res.json({
+        success: true,
+        status: 'connected',
+        message: 'WhatsApp session is already connected!',
+        token: token,
+        sessionName: session.name,
+        jid: currentSessionInfo.jid,
+        userName: currentSessionInfo.name
+      });
+    }
+
+    // Force cleanup any existing problematic connection
+    console.log(`Force cleaning up existing connection for token: ${token}`);
+    forceCleanupSession(token);
     
     // Add a delay to ensure clean closure
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Update session status to connecting
     await updateSessionStatus(token, 'connecting');
@@ -280,20 +308,20 @@ export const checkSessionStatus = async (req, res) => {
       session.status = 'disconnected';
     }
     
+    // Return data in the format expected by frontend
     res.json({
       success: true,
-      data: {
-        token: session.token,
-        name: session.name,
-        status: session.status,
-        lastUpdate: session.updated_at,
-        hasCredentials: !!(session.creds && session.creds.trim()),
-        hasKeys: !!(session.keys && session.keys.trim()),
-        isActive: sessionInfo.isReady,
-        jid: sessionInfo.jid || null,
-        userName: sessionInfo.name || null,
-        connectionStatus: sessionInfo.status
-      }
+      token: session.token,
+      name: session.name,
+      session_status: session.status, // This is what frontend expects
+      lastUpdate: session.updated_at,
+      hasCredentials: !!(session.creds && session.creds.trim()),
+      hasKeys: !!(session.keys && session.keys.trim()),
+      isReady: sessionInfo.isReady, // This is what frontend expects
+      jid: sessionInfo.jid || null,
+      userName: sessionInfo.name || null,
+      connectionStatus: sessionInfo.status,
+      status: sessionInfo.status // Additional status field
     });
   } catch (error) {
     console.error('Error checking session status:', error);
@@ -516,6 +544,92 @@ export const handleLogout = async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: 'Error during logout',
+      details: error.message 
+    });
+  }
+};
+
+export const forceCleanupSessionController = async (req, res) => {
+  const token = req.params.token;
+  
+  try {
+    console.log(`Force cleanup request for session: ${token}`);
+    
+    // Validate token exists
+    const session = await getSessionByToken(token);
+    if (!session) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Session not found.',
+        token: null 
+      });
+    }
+
+    // Force cleanup the session
+    const cleaned = forceCleanupSession(token);
+    
+    if (cleaned) {
+      console.log(`Successfully force cleaned session: ${token}`);
+      res.json({
+        success: true,
+        message: 'Session force cleaned successfully',
+        token: token
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to force clean session',
+        token: token
+      });
+    }
+  } catch (error) {
+    console.error('Error force cleaning session:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error force cleaning session',
+      details: error.message 
+    });
+  }
+};
+
+export const resetReconnectAttempts = async (req, res) => {
+  const token = req.params.token;
+  
+  try {
+    console.log(`Reset reconnect attempts request for session: ${token}`);
+    
+    // Validate token exists
+    const session = await getSessionByToken(token);
+    if (!session) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Session not found.',
+        token: null 
+      });
+    }
+
+    // Reset reconnect attempts
+    const reset = resetSessionReconnectAttempts(token);
+    
+    if (reset) {
+      console.log(`Successfully reset reconnect attempts for session: ${token}`);
+      res.json({
+        success: true,
+        message: 'Reconnect attempts reset successfully',
+        token: token
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: 'Session not found in active connections',
+        token: token
+      });
+    }
+  } catch (error) {
+    console.error('Error resetting reconnect attempts:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error resetting reconnect attempts',
       details: error.message 
     });
   }

@@ -794,8 +794,8 @@
             card.className = `session-card ${statusClass}`;
             card.dataset.token = session.token;
 
-            const userName = session.userName ? `WhatsApp User: ${session.userName}` : '';
-            const jid = session.jid ? `JID: ${session.jid}` : '';
+            const userName = session.userName ? `${session.userName}` : '';
+            const jid = session.jid ? `${session.jid}` : '';
             const lastUpdate = session.last_update ? new Date(session.last_update).toLocaleString() : 'N/A';
 
             card.innerHTML = `
